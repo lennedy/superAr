@@ -17,7 +17,6 @@ function getViewBox(svg) {
     return { x: vb.x, y: vb.y, width: vb.width, height: vb.height };
   }
 
-  // fallback: tenta parsear atributo viewBox="minX minY width height"
   const attr = svg.getAttribute("viewBox");
   if (attr) {
     const [x, y, width, height] = attr.split(/\s+|,/).map(Number);
@@ -26,7 +25,6 @@ function getViewBox(svg) {
     }
   }
 
-  // último fallback: bbox do próprio svg (menos ideal)
   const b = svg.getBBox();
   return { x: b.x, y: b.y, width: b.width || 1, height: b.height || 1 };
 }
@@ -35,10 +33,7 @@ function getViewBox(svg) {
 function toPercent({ x, y }, viewBox) {
   const leftPct = ((x - viewBox.x) / viewBox.width) * 100;
   const topPct = ((y - viewBox.y) / viewBox.height) * 100;
-  return {
-    left: `${leftPct}%`,
-    top: `${topPct}%`,
-  };
+  return { left: `${leftPct}%`, top: `${topPct}%` };
 }
 
 // Centro do bbox de um elemento (em coordenadas do SVG)
@@ -47,13 +42,92 @@ function bboxCenter(el) {
   return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
 }
 
+function Badge({ id, acState, tempC, left, top }) {
+  const cfg = AC_COLORS[acState] ?? AC_COLORS.unmanaged;
+
+  return (
+    <MDBox
+      key={id}
+      sx={{
+        position: "absolute",
+        left,
+        top,
+        transform: "translate(-50%, -50%)",
+        pointerEvents: "none", // deixa o clique passar para a sala no SVG
+
+        // tamanhos responsivos (encolhe em telas pequenas)
+        width: "clamp(28px, 3.2vw, 44px)",
+        borderRadius: "12px",
+        px: "clamp(4px, 0.7vw, 8px)",
+        py: "clamp(3px, 0.6vw, 7px)",
+        bgcolor: "rgba(255,255,255,0.92)",
+        border: "1px solid rgba(0,0,0,0.15)",
+        boxShadow: 2,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 0.5,
+      }}
+      title={id}
+    >
+      {/* Círculo status em cima */}
+      <MDBox
+        sx={{
+          width: "clamp(10px, 1.1vw, 14px)",
+          height: "clamp(10px, 1.1vw, 14px)",
+          borderRadius: "50%",
+          bgcolor: cfg.dot,
+          border: "1px solid rgba(0,0,0,0.15)",
+        }}
+      />
+
+      {/* Temperatura embaixo */}
+      <MDTypography
+        variant="caption"
+        sx={{
+          lineHeight: 1,
+          fontSize: "clamp(9px, 0.9vw, 12px)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {Number.isFinite(tempC) ? `${tempC.toFixed(1)}°C` : "--.-°C"}
+      </MDTypography>
+    </MDBox>
+  );
+}
+
+Badge.propTypes = {
+  id: PropTypes.string.isRequired,
+  acState: PropTypes.oneOf(["on", "off", "unmanaged"]).isRequired,
+  tempC: PropTypes.number,
+  left: PropTypes.string.isRequired,
+  top: PropTypes.string.isRequired,
+};
+
+Badge.defaultProps = {
+  tempC: NaN,
+};
+
 export default function PlantaAr({ rooms, onRoomClick, className, style }) {
   const wrapperRef = useRef(null);
 
-  // Guarda a lista de badges com posição em %
+  // lista de badges com posição em %
   const [badges, setBadges] = useState([]);
 
+  // ratio do SVG p/ container responsivo
+  const [svgRatio, setSvgRatio] = useState({ w: 1, h: 1 });
+
   const roomEntries = useMemo(() => Object.entries(rooms), [rooms]);
+
+  // 0) Captura o viewBox para fixar aspect-ratio (1x só)
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    const svg = wrapper?.querySelector("svg");
+    if (!svg) return;
+
+    const vb = getViewBox(svg);
+    setSvgRatio({ w: vb.width || 1, h: vb.height || 1 });
+  }, []);
 
   // 1) Aplica estilos/click nas salas e calcula badges (em %)
   useEffect(() => {
@@ -62,7 +136,6 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
     if (!svg) return;
 
     const viewBox = getViewBox(svg);
-
     const nextBadges = [];
 
     roomEntries.forEach(([roomId, data]) => {
@@ -76,7 +149,7 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
       el.style.cursor = "pointer";
       el.style.pointerEvents = "all";
 
-      // clique na sala
+      // clique na sala (não bloqueado pelo overlay)
       el.onclick = () => {
         if (onRoomClick) onRoomClick(roomId, data);
       };
@@ -97,7 +170,7 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
     setBadges(nextBadges);
   }, [roomEntries, onRoomClick]);
 
-  // 2) Recalcula posições em resize (importante: responsividade)
+  // 2) Recalcula posições em resize (mantém badges alinhados)
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
@@ -107,8 +180,6 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
 
     const ro = new ResizeObserver(() => {
       const viewBox = getViewBox(svg);
-
-      // Recalcula em cima do DOM atual (mais confiável que só reusar state)
       const nextBadges = [];
 
       roomEntries.forEach(([roomId, data]) => {
@@ -136,68 +207,25 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
 
   return (
     <MDBox className={className} style={style} sx={{ width: "100%" }}>
-      {/* Container RELATIVE para overlay absoluto */}
-      <MDBox sx={{ position: "relative", width: "100%" }}>
-        {/* SVG base */}
-        <div ref={wrapperRef} style={{ width: "100%" }}>
-          <PlantaSvg style={{ width: "100%", height: "auto", display: "block" }} />
-        </div>
+      {/* Container com proporção do SVG (aqui está a responsividade correta) */}
+      <MDBox
+        sx={{
+          position: "relative",
+          width: "100%",
+          aspectRatio: `${svgRatio.w} / ${svgRatio.h}`,
+          overflow: "hidden",
+        }}
+      >
+        {/* SVG ocupa 100% do container */}
+        <MDBox ref={wrapperRef} sx={{ position: "absolute", inset: 0 }}>
+          <PlantaSvg style={{ width: "100%", height: "100%", display: "block" }} />
+        </MDBox>
 
-        {/* Overlay: ocupa a mesma área do SVG */}
-        <MDBox
-          sx={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none", // não bloqueia clique nas salas
-          }}
-        >
-          {badges.map((b) => {
-            const cfg = AC_COLORS[b.acState] ?? AC_COLORS.unmanaged;
-
-            return (
-              <MDBox
-                key={b.id}
-                sx={{
-                  position: "absolute",
-                  left: b.left,
-                  top: b.top,
-                  transform: "translate(-50%, -50%)",
-                  width: 40,
-                  borderRadius: "12px",
-                  px: 1,
-                  py: 0.75,
-                  bgcolor: "rgba(255,255,255,0.90)",
-                  border: "1px solid rgba(0,0,0,0.15)",
-                  boxShadow: 2,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 0.5,
-
-                  // IMPORTANTÍSSIMO:
-                  // mantém clique passando “através” do badge para a sala
-                  pointerEvents: "none",
-                }}
-                title={b.id}
-              >
-                {/* Círculo status em cima */}
-                <MDBox
-                  sx={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    bgcolor: cfg.dot,
-                    border: "1px solid rgba(0,0,0,0.15)",
-                  }}
-                />
-
-                {/* Temperatura embaixo */}
-                <MDTypography variant="caption" sx={{ lineHeight: 1 }}>
-                  {Number.isFinite(b.tempC) ? `${b.tempC.toFixed(1)}°C` : "--.-°C"}
-                </MDTypography>
-              </MDBox>
-            );
-          })}
+        {/* Overlay ocupa 100% do mesmo container */}
+        <MDBox sx={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+          {badges.map((b) => (
+            <Badge key={b.id} {...b} />
+          ))}
         </MDBox>
       </MDBox>
     </MDBox>

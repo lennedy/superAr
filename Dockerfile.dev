@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Dependências primeiro (cache)
+COPY package*.json ./
+RUN npm install
+
+# Em dev, o código vem via volume; ainda assim, copiar não atrapalha
+COPY . .
+
+EXPOSE 3000
+
+# Hot reload em container normalmente precisa escutar em 0.0.0.0
+ENV HOST=0.0.0.0
+ENV PORT=3000
+
+CMD ["npm", "start"]

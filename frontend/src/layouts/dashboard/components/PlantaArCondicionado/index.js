@@ -42,35 +42,50 @@ function bboxCenter(el) {
   return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
 }
 
-function Badge({ id, acState, tempC, left, top }) {
+function Badge({ id, acState, tempC, left, top, onClick }) {
   const cfg = AC_COLORS[acState] ?? AC_COLORS.unmanaged;
 
   return (
     <MDBox
-      key={id}
+      role="button"
+      tabIndex={0}
+      onClick={(e) => {
+        e.stopPropagation(); // não dispara clique da sala por trás
+        onClick?.(id);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onClick?.(id);
+        }
+      }}
       sx={{
         position: "absolute",
         left,
         top,
         transform: "translate(-50%, -50%)",
-        pointerEvents: "none", // deixa o clique passar para a sala no SVG
+        pointerEvents: "auto", // ✅ permite clicar
 
-        // tamanhos responsivos (encolhe em telas pequenas)
+        // badge responsivo
         width: "clamp(28px, 3.2vw, 44px)",
         borderRadius: "12px",
         px: "clamp(4px, 0.7vw, 8px)",
         py: "clamp(3px, 0.6vw, 7px)",
-        bgcolor: "rgba(255,255,255,0.92)",
-        border: "1px solid rgba(0,0,0,0.15)",
+        border: "1px solid rgba(167, 163, 163, 0.15)",
         boxShadow: 2,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         gap: 0.5,
+        cursor: "pointer",
+        userSelect: "none",
+
+        "&:hover": { boxShadow: 4 },
+        "&:focus-visible": { outline: "2px solid rgba(25,118,210,0.8)", outlineOffset: "2px" },
       }}
       title={id}
     >
-      {/* Círculo status em cima */}
       <MDBox
         sx={{
           width: "clamp(10px, 1.1vw, 14px)",
@@ -80,14 +95,13 @@ function Badge({ id, acState, tempC, left, top }) {
           border: "1px solid rgba(0,0,0,0.15)",
         }}
       />
-
-      {/* Temperatura embaixo */}
       <MDTypography
         variant="caption"
         sx={{
           lineHeight: 1,
           fontSize: "clamp(9px, 0.9vw, 12px)",
           whiteSpace: "nowrap",
+          display: { xs: "none", sm: "block" },
         }}
       >
         {Number.isFinite(tempC) ? `${tempC.toFixed(1)}°C` : "--.-°C"}
@@ -102,10 +116,12 @@ Badge.propTypes = {
   tempC: PropTypes.number,
   left: PropTypes.string.isRequired,
   top: PropTypes.string.isRequired,
+  onClick: PropTypes.func,
 };
 
 Badge.defaultProps = {
   tempC: NaN,
+  onClick: null,
 };
 
 export default function PlantaAr({ rooms, onRoomClick, className, style }) {
@@ -224,7 +240,7 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
         {/* Overlay ocupa 100% do mesmo container */}
         <MDBox sx={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
           {badges.map((b) => (
-            <Badge key={b.id} {...b} />
+            <Badge key={b.id} {...b} onClick={(roomId) => onRoomClick?.(roomId, rooms[roomId])} />
           ))}
         </MDBox>
       </MDBox>

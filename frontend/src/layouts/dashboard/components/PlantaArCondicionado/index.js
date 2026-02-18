@@ -65,36 +65,45 @@ function Badge({ id, acState, tempC, left, top, onClick }) {
         left,
         top,
         transform: "translate(-50%, -50%)",
-        pointerEvents: "auto", // ✅ permite clicar
-
-        // badge responsivo
-        width: "clamp(28px, 3.2vw, 44px)",
-        borderRadius: "12px",
-        px: "clamp(4px, 0.7vw, 8px)",
-        py: "clamp(3px, 0.6vw, 7px)",
-        border: "1px solid rgba(167, 163, 163, 0.15)",
-        boxShadow: 2,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 0.5,
+        pointerEvents: "auto",
         cursor: "pointer",
         userSelect: "none",
 
-        "&:hover": { boxShadow: 4 },
-        "&:focus-visible": { outline: "2px solid rgba(25,118,210,0.8)", outlineOffset: "2px" },
+        // ✅ Em xs vira "só bolinha"; em sm+ mantém o badge completo
+        width: { xs: "clamp(14px, 2.4vw, 18px)", sm: "clamp(28px, 3.2vw, 44px)" },
+        height: { xs: "clamp(14px, 2.4vw, 18px)", sm: "auto" },
+        borderRadius: { xs: "999px", sm: "12px" },
+        px: { xs: 0, sm: "clamp(4px, 0.7vw, 8px)" },
+        py: { xs: 0, sm: "clamp(3px, 0.6vw, 7px)" },
+        border: { xs: "none", sm: "1px solid rgba(167, 163, 163, 0.15)" },
+        boxShadow: { xs: 0, sm: 2 },
+
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: { xs: 0, sm: 0.5 },
+
+        "&:hover": { boxShadow: { xs: 0, sm: 4 } },
+        "&:focus-visible": {
+          outline: "2px solid rgba(25,118,210,0.8)",
+          outlineOffset: "2px",
+        },
       }}
       title={id}
     >
       <MDBox
         sx={{
-          width: "clamp(10px, 1.1vw, 14px)",
-          height: "clamp(10px, 1.1vw, 14px)",
+          // ✅ Em xs a bolinha ocupa o badge todo
+          width: { xs: "100%", sm: "clamp(10px, 1.1vw, 14px)" },
+          height: { xs: "100%", sm: "clamp(10px, 1.1vw, 14px)" },
           borderRadius: "50%",
           bgcolor: cfg.dot,
           border: "1px solid rgba(0,0,0,0.15)",
         }}
       />
+
+      {/* ✅ some automaticamente em xs */}
       <MDTypography
         variant="caption"
         sx={{
@@ -127,10 +136,7 @@ Badge.defaultProps = {
 export default function PlantaAr({ rooms, onRoomClick, className, style }) {
   const wrapperRef = useRef(null);
 
-  // lista de badges com posição em %
   const [badges, setBadges] = useState([]);
-
-  // ratio do SVG p/ container responsivo
   const [svgRatio, setSvgRatio] = useState({ w: 1, h: 1 });
 
   const roomEntries = useMemo(() => Object.entries(rooms), [rooms]);
@@ -160,17 +166,14 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
 
       const cfg = AC_COLORS[data.acState] ?? AC_COLORS.unmanaged;
 
-      // pinta sala
       el.style.fill = cfg.fill;
       el.style.cursor = "pointer";
       el.style.pointerEvents = "all";
 
-      // clique na sala (não bloqueado pelo overlay)
       el.onclick = () => {
         if (onRoomClick) onRoomClick(roomId, data);
       };
 
-      // posição do badge (centro da sala -> %)
       const center = bboxCenter(el);
       const pos = toPercent(center, viewBox);
 
@@ -223,7 +226,6 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
 
   return (
     <MDBox className={className} style={style} sx={{ width: "100%" }}>
-      {/* Container com proporção do SVG (aqui está a responsividade correta) */}
       <MDBox
         sx={{
           position: "relative",
@@ -232,13 +234,27 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
           overflow: "hidden",
         }}
       >
-        {/* SVG ocupa 100% do container */}
-        <MDBox ref={wrapperRef} sx={{ position: "absolute", inset: 0 }}>
+        {/* ✅ gira SVG em xs */}
+        <MDBox
+          ref={wrapperRef}
+          sx={{
+            position: "absolute",
+            inset: 0,
+            transformOrigin: "center",
+          }}
+        >
           <PlantaSvg style={{ width: "100%", height: "100%", display: "block" }} />
         </MDBox>
 
-        {/* Overlay ocupa 100% do mesmo container */}
-        <MDBox sx={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        {/* ✅ gira overlay junto para não desalinhar badges */}
+        <MDBox
+          sx={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            transformOrigin: "center",
+          }}
+        >
           {badges.map((b) => (
             <Badge key={b.id} {...b} onClick={(roomId) => onRoomClick?.(roomId, rooms[roomId])} />
           ))}

@@ -87,7 +87,7 @@ function Dashboard() {
             sala3: { acState: "unmanaged", tempC: null },
             sala4: { acState: "on", tempC: 23.4 },
             sala5: { acState: "off", tempC: 27.1 },
-            sala6: { acState: "unmanaged", tempC: null },
+            sala6: { acState: "on", tempC: 22.37 },
             sala7: { acState: "off", tempC: 27.1 },
             sala8: { acState: "unmanaged", tempC: null },
           }}
@@ -95,7 +95,6 @@ function Dashboard() {
             console.log("Sala clicada:", id, data);
           }}
         />
-        {/* <Planta style={{ width: "100%", height: "auto", display: "block" }} /> */}
         {/* <Grid container spacing={3}>
           <Grid item xs={12} md={6} lg={3}>
             <MDBox mb={1.5}>

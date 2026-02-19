@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { ReactComponent as PlantaSvg } from "assets/planta_p1.svg";
+import { ReactComponent as PlantaSvg } from "assets/planta_p1_v6.svg";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 
@@ -9,6 +9,19 @@ const AC_COLORS = {
   off: { dot: "#e53935", fill: "rgba(229,57,53,0.18)" },
   unmanaged: { dot: "#9e9e9e", fill: "rgba(158,158,158,0.12)" },
 };
+
+function centerPercentFromRects(el, overlayEl) {
+  const r = el.getBoundingClientRect();
+  const o = overlayEl.getBoundingClientRect();
+
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+
+  const leftPct = ((cx - o.left) / o.width) * 100;
+  const topPct = ((cy - o.top) / o.height) * 100;
+
+  return { left: `${leftPct}%`, top: `${topPct}%` };
+}
 
 // Lê o viewBox do SVG com fallback seguro
 function getViewBox(svg) {
@@ -78,7 +91,7 @@ function Badge({ id, acState, tempC, left, top, onClick }) {
         border: { xs: "none", sm: "1px solid rgba(167, 163, 163, 0.15)" },
         boxShadow: { xs: 0, sm: 2 },
 
-        display: "flex",
+        display: acState === "unmanaged" ? "none" : "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
@@ -144,11 +157,23 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
   // 0) Captura o viewBox para fixar aspect-ratio (1x só)
   useEffect(() => {
     const wrapper = wrapperRef.current;
-    const svg = wrapper?.querySelector("svg");
-    if (!svg) return;
+    if (!wrapper) return;
 
-    const vb = getViewBox(svg);
-    setSvgRatio({ w: vb.width || 1, h: vb.height || 1 });
+    const updateRatio = () => {
+      const svg = wrapper.querySelector("svg");
+      if (!svg) return;
+      const vb = getViewBox(svg);
+      setSvgRatio({ w: vb.width || 1, h: vb.height || 1 });
+    };
+
+    // calcula logo que montar
+    updateRatio();
+
+    // recalcula se o wrapper mudar de tamanho (responsivo)
+    const ro = new ResizeObserver(() => updateRatio());
+    ro.observe(wrapper);
+
+    return () => ro.disconnect();
   }, []);
 
   // 1) Aplica estilos/click nas salas e calcula badges (em %)
@@ -157,7 +182,8 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
     const svg = wrapper?.querySelector("svg");
     if (!svg) return;
 
-    const viewBox = getViewBox(svg);
+    svg.setAttribute("preserveAspectRatio", "none");
+
     const nextBadges = [];
 
     roomEntries.forEach(([roomId, data]) => {
@@ -174,8 +200,8 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
         if (onRoomClick) onRoomClick(roomId, data);
       };
 
-      const center = bboxCenter(el);
-      const pos = toPercent(center, viewBox);
+      const overlayEl = wrapper; // o MDBox ref={wrapperRef} ocupa exatamente a mesma caixa do overlay
+      const pos = centerPercentFromRects(el, overlayEl);
 
       nextBadges.push({
         id: roomId,
@@ -198,15 +224,15 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
     if (!svg) return;
 
     const ro = new ResizeObserver(() => {
-      const viewBox = getViewBox(svg);
+      const svgNow = wrapper.querySelector("svg");
+      if (!svgNow) return;
       const nextBadges = [];
 
       roomEntries.forEach(([roomId, data]) => {
-        const el = svg.querySelector(`#${CSS.escape(roomId)}`);
+        const el = svgNow.querySelector(`#${CSS.escape(roomId)}`); // ✅ usar svgNow
         if (!el) return;
 
-        const center = bboxCenter(el);
-        const pos = toPercent(center, viewBox);
+        const pos = centerPercentFromRects(el, wrapper); // ✅ usa rect real na tela
 
         nextBadges.push({
           id: roomId,
@@ -231,6 +257,7 @@ export default function PlantaAr({ rooms, onRoomClick, className, style }) {
           position: "relative",
           width: "100%",
           aspectRatio: `${svgRatio.w} / ${svgRatio.h}`,
+          minHeight: { xs: 240, sm: 360 },
           overflow: "hidden",
         }}
       >

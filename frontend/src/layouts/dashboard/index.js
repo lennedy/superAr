@@ -43,53 +43,25 @@ import OrdersOverview from "layouts/dashboard/components/OrdersOverview";
 function Dashboard() {
   const { sales, tasks } = reportsLineChartData;
 
-  useEffect(() => {
-    const salas = ["sala1", "sala2", "sala3", "sala4", "sala5", "sala6", "sala7", "sala8"];
-    for (const s of salas) {
-      const sala = document.getElementById(s);
-
-      if (!sala) return;
-
-      const bbox = sala.getBBox();
-
-      const svg = sala.ownerSVGElement;
-
-      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-
-      // text.setAttribute("x", bbox.x + bbox.width / 2);
-      // text.setAttribute("y", bbox.y + bbox.height / 2);
-      // text.setAttribute("text-anchor", "middle");
-      // text.setAttribute("font-size", "10  ");
-      // text.textContent = "❄️ 36°C";
-
-      const pill = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      pill.setAttribute("x", "-34");
-      pill.setAttribute("y", "-14");
-      pill.setAttribute("width", "68");
-      pill.setAttribute("height", "28");
-      pill.setAttribute("rx", "10");
-      pill.setAttribute("fill", "rgba(255,255,255,0.85)");
-      pill.setAttribute("stroke", "rgba(0,0,0,0.20)");
-      pill.setAttribute("stroke-width", "0.6");
-
-      svg.appendChild(pill);
-    }
-  }, []);
-
   return (
     <DashboardLayout>
       <DashboardNavbar />
       <MDBox py={3}>
         <PlantaArCondicionado
           rooms={{
-            sala1: { acState: "on", tempC: 23.4 },
-            sala2: { acState: "off", tempC: 27.1 },
-            sala3: { acState: "unmanaged", tempC: null },
-            sala4: { acState: "on", tempC: 23.4 },
-            sala5: { acState: "off", tempC: 27.1 },
-            sala6: { acState: "on", tempC: 22.37 },
-            sala7: { acState: "off", tempC: 27.1 },
-            sala8: { acState: "unmanaged", tempC: null },
+            sala01: { acState: "on", tempC: 23.4 },
+            sala02: { acState: "off", tempC: 27.1 },
+            sala03: { acState: "unmanaged", tempC: null },
+            sala04: { acState: "on", tempC: 23.4 },
+            sala05: { acState: "off", tempC: 27.1 },
+            sala06: { acState: "on", tempC: 22.37 },
+            sala07: { acState: "off", tempC: 27.1 },
+            sala08: { acState: "unmanaged", tempC: null },
+            sala09: { acState: "on", tempC: 32.37 },
+            sala17: { acState: "on", tempC: 17.8 },
+            sala18: { acState: "on", tempC: 17.8 },
+            sala20: { acState: "on", tempC: 17.8 },
+            sala23: { acState: "off", tempC: 27.1 },
           }}
           onRoomClick={(id, data) => {
             console.log("Sala clicada:", id, data);

@@ -49,19 +49,19 @@ function Dashboard() {
       <MDBox py={3}>
         <PlantaArCondicionado
           rooms={{
-            sala01: { acState: "on", tempC: 23.4 },
-            sala02: { acState: "off", tempC: 27.1 },
-            sala03: { acState: "unmanaged", tempC: null },
-            sala04: { acState: "on", tempC: 23.4 },
-            sala05: { acState: "off", tempC: 27.1 },
-            sala06: { acState: "on", tempC: 22.37 },
-            sala07: { acState: "off", tempC: 27.1 },
-            sala08: { acState: "unmanaged", tempC: null },
-            sala09: { acState: "on", tempC: 32.37 },
-            sala17: { acState: "on", tempC: 17.8 },
-            sala18: { acState: "on", tempC: 17.8 },
-            sala20: { acState: "on", tempC: 17.8 },
-            sala23: { acState: "off", tempC: 27.1 },
+            sala01: { acState: ["on"], tempC: 23.4 },
+            sala02: { acState: ["off", "on", "on"], tempC: 27.1 },
+            sala03: { acState: ["unmanaged"], tempC: null },
+            sala04: { acState: ["on", "on"], tempC: 23.4 },
+            sala05: { acState: ["off"], tempC: 27.1 },
+            sala06: { acState: ["on"], tempC: 22.37 },
+            sala07: { acState: ["off"], tempC: 27.1 },
+            sala08: { acState: ["unmanaged"], tempC: null },
+            sala09: { acState: ["on", "on", "off"], tempC: 32.37 },
+            sala17: { acState: ["on"], tempC: 17.8 },
+            sala18: { acState: ["on"], tempC: 17.8 },
+            sala20: { acState: ["on"], tempC: 17.8 },
+            sala23: { acState: ["off"], tempC: 27.1 },
           }}
           onRoomClick={(id, data) => {
             console.log("Sala clicada:", id, data);

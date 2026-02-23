@@ -56,7 +56,10 @@ function bboxCenter(el) {
 }
 
 function Badge({ id, acState, tempC, left, top, onClick }) {
-  const cfg = AC_COLORS[acState] ?? AC_COLORS.unmanaged;
+  let cfg = [];
+  for (const state of acState) {
+    cfg.push(AC_COLORS[state] ?? AC_COLORS.unmanaged);
+  }
 
   return (
     <MDBox
@@ -83,8 +86,19 @@ function Badge({ id, acState, tempC, left, top, onClick }) {
         userSelect: "none",
 
         // ✅ Em xs vira "só bolinha"; em sm+ mantém o badge completo
-        width: { xs: "clamp(14px, 2.4vw, 18px)", sm: "clamp(28px, 3.2vw, 44px)" },
-        height: { xs: "clamp(14px, 2.4vw, 18px)", sm: "auto" },
+        width: {
+          xs: "clamp(14px, 2.4vw, 18px)",
+          sm: acState.length == 3 ? "clamp(28px, 4.8vw, 60px)" : "clamp(28px, 3.2vw, 44px)",
+        },
+        height: {
+          xs:
+            acState.length === 3
+              ? "clamp(22px, 12vw, 40px)"
+              : acState.length === 2
+              ? "clamp(18px, 10vw, 32px)"
+              : "clamp(14px, 8.4vw, 29px)",
+          sm: "auto",
+        },
         borderRadius: { xs: "999px", sm: "12px" },
         px: { xs: 0, sm: "clamp(4px, 0.7vw, 8px)" },
         py: { xs: 0, sm: "clamp(3px, 0.6vw, 7px)" },
@@ -107,14 +121,39 @@ function Badge({ id, acState, tempC, left, top, onClick }) {
     >
       <MDBox
         sx={{
-          // ✅ Em xs a bolinha ocupa o badge todo
-          width: { xs: "100%", sm: "clamp(10px, 1.1vw, 14px)" },
-          height: { xs: "100%", sm: "clamp(10px, 1.1vw, 14px)" },
-          borderRadius: "50%",
-          bgcolor: cfg.dot,
-          border: "1px solid rgba(0,0,0,0.15)",
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: "center",
+          justifyContent: "center",
+          gap: { xs: 0.25, sm: 0.5 },
+          width: { xs: "100%", sm: "auto" },
+          height: { xs: "100%", sm: "auto" },
         }}
-      />
+      >
+        {Array.from({ length: acState.length }).map((_, idx) => (
+          <MDBox
+            key={`${id}-acdot-${idx}`}
+            sx={{
+              width: { xs: "clamp(10px, 2.0vw, 14px)", sm: "clamp(10px, 1.1vw, 14px)" },
+              height: { xs: "clamp(10px, 2.0vw, 14px)", sm: "clamp(10px, 1.1vw, 14px)" },
+              borderRadius: "50%",
+              bgcolor: cfg[idx].dot,
+              border: "1px solid rgba(0,0,0,0.15)",
+              flexShrink: 0,
+            }}
+          />
+        ))}
+        {/* <MDBox
+          sx={{
+            // ✅ Em xs a bolinha ocupa o badge todo
+            width: { xs: "100%", sm: "clamp(10px, 1.1vw, 14px)" },
+            height: { xs: "100%", sm: "clamp(10px, 1.1vw, 14px)" },
+            borderRadius: "50%",
+            bgcolor: cfg[0].dot,
+            border: "1px solid rgba(0,0,0,0.15)",
+          }}
+        /> */}
+      </MDBox>
 
       {/* ✅ some automaticamente em xs */}
       <MDTypography
